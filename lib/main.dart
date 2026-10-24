@@ -1,7 +1,10 @@
 
 import 'package:flutter/material.dart';
+
 import 'screens/meal_form_screen.dart';
 import 'screens/meal_detail_screen.dart';
+import 'screens/history_screen.dart';
+import 'screens/budget_settings_screen.dart';
 
 void main() {
   runApp(const BudgetBitesApp());
@@ -30,12 +33,16 @@ class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  State<DashboardScreen> createState() =>
+      _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  final double budget = 200.00;
+  // Monthly budget can be changed in Budget Settings.
+  double budget = 200.00;
 
+  // Temporary sample data.
+  // SQLite will replace this later.
   final List<Map<String, dynamic>> meals = [
     {
       'name': 'Lunch',
@@ -57,71 +64,138 @@ class _DashboardScreenState extends State<DashboardScreen> {
     },
   ];
 
-  double get totalSpent => meals.fold<double>(
-        0.0,
-        (sum, meal) => sum + (meal['amount'] as double),
-      );
+  // Calculate total spending.
+  double get totalSpent {
+    return meals.fold<double>(
+      0.0,
+      (sum, meal) => sum + (meal['amount'] as double),
+    );
+  }
 
+  double get remainingBudget => budget - totalSpent;
+
+  // Add a new meal.
   Future<void> _openAddMeal() async {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
-        builder: (_) => const MealFormScreen(),
+        builder: (context) => const MealFormScreen(),
       ),
     );
 
     if (!mounted || result == null) return;
 
-    setState(() => meals.insert(0, result));
+    setState(() {
+      meals.insert(0, result);
+    });
+
     _showMessage('Meal added successfully!');
   }
 
+  // View, edit, or delete a meal.
   Future<void> _openMealDetail(int index) async {
     final meal = Map<String, dynamic>.from(meals[index]);
 
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
-        builder: (_) => MealDetailScreen(meal: meal),
+        builder: (context) => MealDetailScreen(
+          meal: meal,
+        ),
       ),
     );
 
     if (!mounted || result == null) return;
 
     if (result['action'] == 'delete') {
-      setState(() => meals.removeAt(index));
+      setState(() {
+        meals.removeAt(index);
+      });
+
       _showMessage('Meal deleted successfully!');
     } else if (result['action'] == 'edit') {
       final updatedMeal =
           await Navigator.push<Map<String, dynamic>>(
         context,
         MaterialPageRoute(
-          builder: (_) => MealFormScreen(existingMeal: meal),
+          builder: (context) => MealFormScreen(
+            existingMeal: meal,
+          ),
         ),
       );
 
       if (!mounted || updatedMeal == null) return;
 
-      setState(() => meals[index] = updatedMeal);
+      setState(() {
+        meals[index] = updatedMeal;
+      });
+
       _showMessage('Meal updated successfully!');
     }
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+  // Open History & Insights.
+  void _openHistory() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HistoryScreen(
+          meals: meals,
+        ),
+      ),
     );
   }
 
+  // Open Budget Settings and update the budget.
+  Future<void> _openBudgetSettings() async {
+    final newBudget = await Navigator.push<double>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BudgetSettingsScreen(
+          currentBudget: budget,
+        ),
+      ),
+    );
+
+    if (!mounted || newBudget == null) return;
+
+    setState(() {
+      budget = newBudget;
+    });
+
+    _showMessage('Budget updated successfully!');
+  }
+
+  // Show success messages.
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+      ),
+    );
+  }
+
+  // Format dates.
   String _formatDate(DateTime date) {
     const months = [
-      'January', 'February', 'March', 'April',
-      'May', 'June', 'July', 'August',
-      'September', 'October', 'November', 'December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
+
     return '${months[date.month - 1]} ${date.day}';
   }
 
+  // Choose icons for meal categories.
   IconData _categoryIcon(String category) {
     switch (category) {
       case 'Groceries':
@@ -136,8 +210,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final spent = totalSpent;
-    final remaining = budget - spent;
-    final progress = budget > 0
+    final remaining = remainingBudget;
+
+    final double progress = budget > 0
         ? (spent / budget).clamp(0.0, 1.0)
         : 0.0;
 
@@ -147,15 +222,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
         centerTitle: true,
         backgroundColor: Colors.green.shade100,
         actions: [
+          // History button
+          IconButton(
+            tooltip: 'History & Insights',
+            icon: const Icon(Icons.bar_chart),
+            onPressed: _openHistory,
+          ),
+
+          // Budget Settings button
           IconButton(
             tooltip: 'Budget Settings',
             icon: const Icon(Icons.settings),
-            onPressed: () {
-              _showMessage('Budget Settings is coming soon!');
-            },
+            onPressed: _openBudgetSettings,
           ),
         ],
       ),
+
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -166,15 +248,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
+
           const SizedBox(height: 20),
+
+          // Monthly Budget Card
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
                 children: [
                   const Text('Monthly Budget'),
+
                   const SizedBox(height: 8),
+
                   Text(
                     '\$${budget.toStringAsFixed(2)}',
                     style: const TextStyle(
@@ -182,7 +270,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
                   const SizedBox(height: 12),
+
                   LinearProgressIndicator(
                     value: progress,
                     minHeight: 10,
@@ -192,8 +282,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ? Colors.red
                         : Colors.green.shade700,
                   ),
+
                   const SizedBox(height: 12),
-                  Text('Spent: \$${spent.toStringAsFixed(2)}'),
+
+                  Text(
+                    'Spent: \$${spent.toStringAsFixed(2)}',
+                  ),
+
                   Text(
                     'Remaining: \$${remaining.toStringAsFixed(2)}',
                     style: TextStyle(
@@ -207,7 +302,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
+
           const SizedBox(height: 24),
+
+          // Recent Meals Heading
           const Text(
             'Recent Meals',
             style: TextStyle(
@@ -215,7 +313,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
+
           const SizedBox(height: 12),
+
+          // Empty list message
           if (meals.isEmpty)
             const Card(
               child: Padding(
@@ -228,8 +329,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             )
           else
+            // Display meal list
             ...List.generate(meals.length, (index) {
               final meal = meals[index];
+
               final name = meal['name'] as String;
               final amount = meal['amount'] as double;
               final category = meal['category'] as String;
@@ -238,23 +341,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
               return Card(
                 child: ListTile(
                   onTap: () => _openMealDetail(index),
-                  leading: Icon(_categoryIcon(category)),
+                  leading: Icon(
+                    _categoryIcon(category),
+                  ),
                   title: Text(name),
-                  subtitle: Text(_formatDate(date)),
+                  subtitle: Text(
+                    _formatDate(date),
+                  ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('\$${amount.toStringAsFixed(2)}'),
+                      Text(
+                        '\$${amount.toStringAsFixed(2)}',
+                      ),
                       const SizedBox(width: 8),
-                      const Icon(Icons.chevron_right),
+                      const Icon(
+                        Icons.chevron_right,
+                      ),
                     ],
                   ),
                 ),
               );
             }),
+
           const SizedBox(height: 80),
         ],
       ),
+
+      // Add Meal button
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openAddMeal,
         icon: const Icon(Icons.add),
