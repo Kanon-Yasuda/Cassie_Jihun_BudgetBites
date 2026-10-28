@@ -1,121 +1,278 @@
 import 'package:flutter/material.dart';
 
+import 'screens/meal_form_screen.dart';
+import 'screens/meal_detail_screen.dart';
+import 'screens/history_screen.dart';
+import 'screens/budget_settings_screen.dart';
+
 void main() {
-  runApp(const MyApp());
+  runApp(const BudgetBitesApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class BudgetBitesApp extends StatelessWidget {
+  const BudgetBitesApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Budget Bites',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const DashboardScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _DashboardScreenState extends State<DashboardScreen> {
+  double budget = 200.00;
 
-  void _incrementCounter() {
+  // Sample data until SQLite is connected.
+  final List<Map<String, dynamic>> meals = [
+    {
+      'name': 'Lunch',
+      'amount': 12.50,
+      'category': 'Meal',
+      'date': DateTime(2026, 10, 24),
+    },
+    {
+      'name': 'Groceries',
+      'amount': 35.00,
+      'category': 'Groceries',
+      'date': DateTime(2026, 10, 23),
+    },
+    {
+      'name': 'Breakfast',
+      'amount': 8.00,
+      'category': 'Meal',
+      'date': DateTime(2026, 10, 22),
+    },
+  ];
+
+  // Add all meal costs.
+  double get totalSpent {
+    double total = 0;
+
+    for (var meal in meals) {
+      total += meal['amount'] as double;
+    }
+
+    return total;
+  }
+
+  double get remainingBudget => budget - totalSpent;
+
+  String formatDate(DateTime date) {
+    return '${date.month}/${date.day}/${date.year}';
+  }
+
+  IconData categoryIcon(String category) {
+    switch (category) {
+      case 'Groceries':
+        return Icons.shopping_cart;
+      case 'Snack':
+        return Icons.cookie;
+      default:
+        return Icons.lunch_dining;
+    }
+  }
+
+  void showMessage(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  // Add a new meal.
+  Future<void> addMeal() async {
+    final newMeal = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(builder: (context) => const MealFormScreen()),
+    );
+
+    if (!mounted || newMeal == null) return;
+
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      meals.insert(0, newMeal);
     });
+
+    showMessage('Meal added successfully!');
+  }
+
+  // View, edit, or delete a meal.
+  Future<void> openMeal(int index) async {
+    final meal = Map<String, dynamic>.from(meals[index]);
+
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(builder: (context) => MealDetailScreen(meal: meal)),
+    );
+
+    if (!mounted || result == null) return;
+
+    if (result['action'] == 'delete') {
+      setState(() {
+        meals.removeAt(index);
+      });
+
+      showMessage('Meal deleted successfully!');
+    }
+
+    if (result['action'] == 'edit') {
+      final updatedMeal = await Navigator.push<Map<String, dynamic>>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MealFormScreen(existingMeal: meal),
+        ),
+      );
+
+      if (!mounted || updatedMeal == null) return;
+
+      setState(() {
+        meals[index] = updatedMeal;
+      });
+
+      showMessage('Meal updated successfully!');
+    }
+  }
+
+  // Open spending history.
+  void openHistory() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => HistoryScreen(meals: meals)),
+    );
+  }
+
+  // Change the monthly budget.
+  Future<void> openSettings() async {
+    final newBudget = await Navigator.push<double>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BudgetSettingsScreen(currentBudget: budget),
+      ),
+    );
+
+    if (!mounted || newBudget == null) return;
+
+    setState(() {
+      budget = newBudget;
+    });
+
+    showMessage('Budget updated successfully!');
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    final spent = totalSpent;
+    final remaining = remainingBudget;
+    final progress = (spent / budget).clamp(0.0, 1.0);
+
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: const Text('Budget Bites'),
+        centerTitle: true,
+        backgroundColor: Colors.green.shade100,
+        actions: [
+          IconButton(
+            tooltip: 'History & Insights',
+            icon: const Icon(Icons.bar_chart),
+            onPressed: openHistory,
+          ),
+          IconButton(
+            tooltip: 'Budget Settings',
+            icon: const Icon(Icons.settings),
+            onPressed: openSettings,
+          ),
+        ],
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Text(
+            'Welcome to Budget Bites!',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 20),
+
+          // Budget summary.
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Monthly Budget'),
+                  const SizedBox(height: 8),
+                  Text(
+                    '\$${budget.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 10,
+                    backgroundColor: Colors.green.shade100,
+                    color: remaining < 0 ? Colors.red : Colors.green,
+                  ),
+                  const SizedBox(height: 12),
+                  Text('Spent: \$${spent.toStringAsFixed(2)}'),
+                  Text(
+                    'Remaining: \$${remaining.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: remaining < 0 ? Colors.red : Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 24),
+
+          const Text(
+            'Recent Meals',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+
+          if (meals.isEmpty)
+            const Center(child: Text('No meals yet. Add your first meal!'))
+          else
+            ...List.generate(meals.length, (index) {
+              final meal = meals[index];
+
+              return Card(
+                child: ListTile(
+                  onTap: () => openMeal(index),
+                  leading: Icon(categoryIcon(meal['category'] as String)),
+                  title: Text(meal['name'] as String),
+                  subtitle: Text(formatDate(meal['date'] as DateTime)),
+                  trailing: Text(
+                    '\$${(meal['amount'] as double).toStringAsFixed(2)}',
+                  ),
+                ),
+              );
+            }),
+
+          const SizedBox(height: 80),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: addMeal,
+        icon: const Icon(Icons.add),
+        label: const Text('Add Meal'),
       ),
     );
   }
