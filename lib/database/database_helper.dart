@@ -54,9 +54,13 @@ class DatabaseHelper {
       )
     ''');
   }
-  
+  // CRUD FOR MEALS 
   // CREATE - Insert new item
   Future<int> createMeals(Meal meal) async {
+
+    if (meal.name.isEmpty || meal.category.isEmpty) {
+      throw Exception('Meal must have a name and category.');
+    }
 
     final db = await database;
     final data = meal.toMap();
@@ -82,13 +86,13 @@ class DatabaseHelper {
   }
   
   // UPDATE - Update existing item
-  Future<int> updateMeal(int id, Map<String, dynamic> item) async {
+  Future<int> updateMeal(int id, Meal meal) async {
     final db = await database;
     return await db.update(
       'meals',
-      item,
+      meal.toMap(),
       where: 'id = ?',
-      whereArgs: [id],
+      whereArgs: [meal, id],
     );
   }
   
@@ -103,7 +107,8 @@ class DatabaseHelper {
   }
 
 
-// CREATE - Insert new item
+  // CRUD FOR PURCHASES
+  // CREATE - Insert new item
   Future<int> createPurchase(Purchase purchase) async {
 
     final db = await database;
