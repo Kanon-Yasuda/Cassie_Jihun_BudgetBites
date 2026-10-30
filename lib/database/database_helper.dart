@@ -75,18 +75,23 @@ class DatabaseHelper {
   }
   
   // READ - Get single item by ID
-  Future<Map<String, dynamic>?> getMeal(int id) async {
+  Future<Meal?> getMeal(int id) async {
     final db = await database;
     final results = await db.query(
       'meals',
       where: 'id = ?',
       whereArgs: [id],
     );
-    return results.isNotEmpty ? results.first : null;
+    return Meal.fromMap(results.first);
   }
   
   // UPDATE - Update existing item
   Future<int> updateMeal(int id, Meal meal) async {
+
+    if (meal.name.isEmpty || meal.category.isEmpty) {
+      throw Exception('Meal must have a name and category.');
+    }
+    
     final db = await database;
     return await db.update(
       'meals',
