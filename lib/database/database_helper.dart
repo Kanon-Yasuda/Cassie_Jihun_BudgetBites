@@ -37,31 +37,37 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE meals (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        description TEXT,
-        created_at TEXT NOT NULL
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        date TEXT NOT NULL,
+        notes TEXT
       )
     ''');
     await db.execute('''
       CREATE TABLE purchases (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        description TEXT,
-        created_at TEXT NOT NULL
+        meal_id INTEGER NOT NULL,
+        item_name TEXT NOT NULL,
+        cost REAL NOT NULL,
+        date TEXT NOT NULL,
+        FOREIGN KEY (meal_id) REFERENCES meals (id) ON DELETE CASCADE
       )
     ''');
   }
   
   // CREATE - Insert new item
-  Future<int> createMeals(Map<String, dynamic> item) async {
+  Future<int> createMeals(Meal meal) async {
+
     final db = await database;
-    return await db.insert('meals', item);
+    final data = meal.toMap();
+    return await db.insert('meals', data);
   }
   
   // READ - Get all items
-  Future<List<Map<String, dynamic>>> getAllMeals() async {
+  Future<List<Meal>> getAllMeals() async {
     final db = await database;
-    return await db.query('meals', orderBy: 'created_at DESC');
+    final results = await db.query('meals', orderBy: 'date DESC');
+    return results.map((map) => Meal.fromMap(map)).toList();
   }
   
   // READ - Get single item by ID
@@ -91,6 +97,54 @@ class DatabaseHelper {
     final db = await database;
     return await db.delete(
       'meals',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+
+// CREATE - Insert new item
+  Future<int> createPurchase(Purchase purchase) async {
+
+    final db = await database;
+    final data = purchase.toMap();
+    return await db.insert('purchases', data);
+  }
+  
+  // READ - Get all items
+  Future<List<Purchase>> getAllPurchases() async {
+    final db = await database;
+    final results = await db.query('purchases', orderBy: 'date DESC');
+    return results.map((map) => Purchase.fromMap(map)).toList();
+  }
+  
+  // READ - Get single item by ID
+  Future<Map<String, dynamic>?> getPurchase(int id) async {
+    final db = await database;
+    final results = await db.query(
+      'purchases',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    return results.isNotEmpty ? results.first : null;
+  }
+  
+  // UPDATE - Update existing item
+  Future<int> updatePurchase(int id, Map<String, dynamic> item) async {
+    final db = await database;
+    return await db.update(
+      'purchases',
+      item,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+  
+  // DELETE - Remove item
+  Future<int> deletePurchase(int id) async {
+    final db = await database;
+    return await db.delete(
+      'purchases',
       where: 'id = ?',
       whereArgs: [id],
     );
