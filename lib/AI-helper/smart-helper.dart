@@ -1,4 +1,10 @@
 class SmartHelper {
-  List<String> suggest(List<String>
-  history)
+  String suggest(
+    double budget,
+    double totalSpent
+  ){
+    if (totalSpent >= budget/2)
+    return "Slow down! You are halfway to your budget";
+
+  }
 }

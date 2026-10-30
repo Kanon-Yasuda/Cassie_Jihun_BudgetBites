@@ -82,6 +82,7 @@ class DatabaseHelper {
       where: 'id = ?',
       whereArgs: [id],
     );
+    if (results.isEmpty) return null;
     return Meal.fromMap(results.first);
   }
   
