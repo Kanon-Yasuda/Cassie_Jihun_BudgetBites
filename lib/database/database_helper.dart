@@ -16,7 +16,7 @@ class DatabaseHelper {
   // Get database instance
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('myapp.db');
+    _database = await _initDB('budget_bites.db');
     return _database!;
   }
   
@@ -35,7 +35,15 @@ class DatabaseHelper {
   // Create database tables
   Future<void> _createDB(Database db, int version) async {
     await db.execute('''
-      CREATE TABLE items (
+      CREATE TABLE meals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE purchases (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         description TEXT,
@@ -45,22 +53,22 @@ class DatabaseHelper {
   }
   
   // CREATE - Insert new item
-  Future<int> createItem(Map<String, dynamic> item) async {
+  Future<int> createMeals(Map<String, dynamic> item) async {
     final db = await database;
-    return await db.insert('items', item);
+    return await db.insert('meals', item);
   }
   
   // READ - Get all items
-  Future<List<Map<String, dynamic>>> getAllItems() async {
+  Future<List<Map<String, dynamic>>> getAllMeals() async {
     final db = await database;
-    return await db.query('items', orderBy: 'created_at DESC');
+    return await db.query('meals', orderBy: 'created_at DESC');
   }
   
   // READ - Get single item by ID
-  Future<Map<String, dynamic>?> getItem(int id) async {
+  Future<Map<String, dynamic>?> getMeal(int id) async {
     final db = await database;
     final results = await db.query(
-      'items',
+      'meals',
       where: 'id = ?',
       whereArgs: [id],
     );
@@ -68,10 +76,10 @@ class DatabaseHelper {
   }
   
   // UPDATE - Update existing item
-  Future<int> updateItem(int id, Map<String, dynamic> item) async {
+  Future<int> updateMeal(int id, Map<String, dynamic> item) async {
     final db = await database;
     return await db.update(
-      'items',
+      'meals',
       item,
       where: 'id = ?',
       whereArgs: [id],
@@ -79,10 +87,10 @@ class DatabaseHelper {
   }
   
   // DELETE - Remove item
-  Future<int> deleteItem(int id) async {
+  Future<int> deleteMeal(int id) async {
     final db = await database;
     return await db.delete(
-      'items',
+      'meals',
       where: 'id = ?',
       whereArgs: [id],
     );
