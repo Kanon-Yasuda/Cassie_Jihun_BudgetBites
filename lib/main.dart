@@ -345,6 +345,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: Colors.green.shade100,
         actions: [
           IconButton(
+            tooltip: 'AI Budget Helper',
+            icon: const Icon(Icons.lightbulb_outline),
+            onPressed: openSmartHelper,
+          ),
+          IconButton(
             tooltip: 'History & Insights',
             icon: const Icon(Icons.bar_chart),
             onPressed: openHistory,
