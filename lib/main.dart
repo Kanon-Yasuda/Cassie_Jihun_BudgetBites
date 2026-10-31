@@ -8,6 +8,7 @@ import 'screens/meal_form_screen.dart';
 import 'screens/meal_detail_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/budget_settings_screen.dart';
+import 'screens/smart_helper_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -287,7 +288,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     }
   }
-
+  // Opens the Smart Helper screen.
+  void openSmartHelper() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SmartHelperScreen(
+          budget: budget,
+          totalSpent: totalSpent,
+        ),
+      ),
+    );
+  }
   // Open spending history.
   void openHistory() {
     Navigator.push(
@@ -332,6 +344,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         centerTitle: true,
         backgroundColor: Colors.green.shade100,
         actions: [
+          IconButton(
+            tooltip: 'AI Budget Helper',
+            icon: const Icon(Icons.lightbulb_outline),
+            onPressed: openSmartHelper,
+          ),
           IconButton(
             tooltip: 'History & Insights',
             icon: const Icon(Icons.bar_chart),

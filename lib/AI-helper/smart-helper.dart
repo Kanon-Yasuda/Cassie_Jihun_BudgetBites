@@ -11,7 +11,7 @@ class SmartHelper {
     if (totalSpent >= budget / 2) {
       return "Slow down! You are halfway to your budget";
     }
-    return "You have not spent much yet. This purchase is within your budget.";
+    return "You have not spent much yet. You can purchase more if you wish.";
   }
   Future<String> suggestFood(
     double budget,
