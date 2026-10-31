@@ -24,10 +24,33 @@ class SmartHelperScreen extends StatelessWidget {
               Text('Budget: \$${budget.toStringAsFixed(2)}'),
               Text('Spent: \$${totalSpent.toStringAsFixed(2)}'),
 
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               Text(SmartHelper().suggestMoney(budget, totalSpent), textAlign: TextAlign.center,
                 ),
+
+              const SizedBox(height: 20),
+
+              const Text('Food Suggestion'),
+
+              FutureBuilder<String>(
+                future: SmartHelper().suggestFood(
+                  budget,
+                  totalSpent,
+                  budget - totalSpent,
+                ),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Text('Loading...');
+                  }
+
+                  if (snapshot.hasError) {
+                    return const Text('Could not load food suggestions.');
+                  }
+
+                  return Text(snapshot.data ?? 'No suggestions available.');
+                },
+              ),
             ],
           ),
       ),
