@@ -28,6 +28,9 @@ class DatabaseHelper {
     return await openDatabase(
       path,
       version: 1,
+      onConfigure: (db) async {
+       await db.execute('PRAGMA foreign_keys = ON');
+      },
       onCreate: _createDB,
     );
   }
@@ -63,8 +66,9 @@ class DatabaseHelper {
     }
 
     final db = await database;
-    final data = meal.toMap();
-    return await db.insert('meals', data);
+  //  final data = meal.toMap();
+  //  return await db.insert('meals', data);
+    return await db.insert('meals', meal.toMap());
   }
   
   // READ - Get all items
@@ -82,7 +86,7 @@ class DatabaseHelper {
       where: 'id = ?',
       whereArgs: [id],
     );
-    if (results.isEmpty) return null;
+    if (results.isEmpty) {return null;}
     return Meal.fromMap(results.first);
   }
   
@@ -98,7 +102,7 @@ class DatabaseHelper {
       'meals',
       meal.toMap(),
       where: 'id = ?',
-      whereArgs: [meal, id],
+      whereArgs: [id],
     );
   }
   
@@ -118,8 +122,8 @@ class DatabaseHelper {
   Future<int> createPurchase(Purchase purchase) async {
 
     final db = await database;
-    final data = purchase.toMap();
-    return await db.insert('purchases', data);
+  //  final data = purchase.toMap();
+    return await db.insert('purchases', purchase.toMap());
   }
   
   // READ - Get all items
